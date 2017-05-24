@@ -288,6 +288,11 @@ func Bits(bitorder Endianness, n uint8) Iteratee {
 	return iter(0, 0, n)
 }
 
+// Iteratee equivalent of binary.Read.
+// ptr must be a pointer to the data structure to be filled;
+// if passed a typed (!) nil, the result will be allocated.
+// Supported types are combinations of fixed-size numeric types, arrays, and
+// structs.
 func Struct(byteorder Endianness, ptr interface{}) Iteratee {
 	vptr := reflect.ValueOf(ptr)
 	Tptr := vptr.Type()
