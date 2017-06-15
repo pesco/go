@@ -92,6 +92,15 @@ func OneOf(set []byte) (this Iteratee) {
 	return
 }
 
+// XXX todo NoneOf
+
+func Range(it Iteratee, min,max uint64) Iteratee {
+	return Validate(it, func(x_ interface{}) bool {
+		x := x_.(uint64)
+		return x >= min && x <= max
+	})
+}
+
 // n-byte numbers, general case
 func Uint(byteorder Endianness, n uint) Iteratee {
 	if n > 8 {
@@ -474,6 +483,25 @@ func Many1_(it Iteratee) Iteratee {
 	return it.Bind(func(interface{}) Iteratee {return Many_(it)})
 }
 
+// a variant of Many that requires all input to match the given
+// iteratee. passes the error that 'it' stopped with.
+func ManyEnd(slice interface{}, it Iteratee) Iteratee {
+	return Cont(func(s Stream) (Iteratee, Stream) {
+		if s == End {
+			return Done(slice), s
+		}
+		return Many1End(slice, it).Feed(s)
+	})
+}
+
+func Many1End(slice interface{}, it Iteratee) Iteratee {
+	return it.Bind(func(x interface{}) Iteratee {
+		vslice := reflect.ValueOf(slice)
+		vslice = reflect.Append(vslice, reflect.ValueOf(x))
+		return ManyEnd(vslice.Interface(), it)
+	})
+}
+
 func Optional(it Iteratee) Iteratee {
 	return OChoice(it, Done(nil))
 }
@@ -495,5 +523,22 @@ func Times_(n int, it Iteratee) Iteratee {
 	}
 	return it.Bind(func(x interface{}) Iteratee {
 		return Times_(n-1, it)
+	})
+}
+
+func Validate(it Iteratee, pred func(interface{}) bool) Iteratee {
+	return it.Bind(func(x interface{}) Iteratee {
+		if pred(x) {
+			return Done(x)
+		} else {
+			return Fail(NoMatch{"Validate"})
+		}
+	})
+}
+
+// a useful variant of Then that returns the left-hand result
+func (a Iteratee) ThenIgnore(b Iteratee) Iteratee {
+	return a.Bind(func(x interface{}) Iteratee {
+		return b.ThenReturn(x)
 	})
 }
