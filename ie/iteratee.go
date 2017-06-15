@@ -126,6 +126,13 @@ func (a Iteratee) Then_(b_ monad.Monad) monad.Monad {
 	return a.Then(b_.(Iteratee))
 }
 
+// a useful variant of Then that returns the left-hand result
+func (a Iteratee) ThenIgnore(b Iteratee) Iteratee {
+	return a.Bind(func(x interface{}) Iteratee {
+		return b.ThenReturn(x)
+	})
+}
+
 
 // primitive iteratees...
 

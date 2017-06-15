@@ -535,10 +535,3 @@ func Validate(it Iteratee, pred func(interface{}) bool) Iteratee {
 		}
 	})
 }
-
-// a useful variant of Then that returns the left-hand result
-func (a Iteratee) ThenIgnore(b Iteratee) Iteratee {
-	return a.Bind(func(x interface{}) Iteratee {
-		return b.ThenReturn(x)
-	})
-}
