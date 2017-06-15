@@ -7,8 +7,8 @@ import (
 )
 
 
-type NoMatch struct {s string}
-func (e NoMatch) Error() string {return (e.s + ": no match")}
+type NoMatch struct {Expect string}
+func (e NoMatch) Error() string {return (e.Expect + ": no match")}
 
 
 // primitive parsers...
@@ -19,7 +19,7 @@ func k_eof(s Stream) (Iteratee, Stream) {
 		return Cont(k_eof), s
 	}
 	if s != End {
-		return Fail(NoMatch{"end of input"}), s
+		return Fail(NoMatch{"expected end of input"}), s
 	}
 	return Done(nil), s
 }
@@ -30,14 +30,14 @@ var Any Iteratee = Head
 func Byte(b byte) (this Iteratee) {
 	this = Cont(func(s Stream) (Iteratee, Stream) {
 		if s == End {
-			return Fail(NoMatch{"end of input"}), s
+			return Fail(NoMatch{fmt.Sprintf("%q (unexpected end of input)", b)}), s
 		}
 		if s == Empty {
 			return this, s
 		}
 		slice := s.Slice().([]byte)
 		if slice[0] != b {
-			return Fail(NoMatch{fmt.Sprintf("unexpected %q", slice[0])}), s
+			return Fail(NoMatch{fmt.Sprintf("%q (unexpected %q)", b, slice[0])}), s
 		}
 		return Done(b), Chunk(slice[1:])
 	})
@@ -55,7 +55,7 @@ func string_(x string) (this Iteratee) {
 	}
 	this = Cont(func(s Stream) (Iteratee, Stream) {
 		if s == End {
-			return Fail(NoMatch{"end of input"}), s
+			return Fail(NoMatch{fmt.Sprintf("%q (unexpected end of input)", x)}), s
 		}
 		if s == Empty {
 			return this, s
@@ -66,7 +66,7 @@ func string_(x string) (this Iteratee) {
 				return string_(x[i:]), Empty
 			}
 			if slice[i] != x[i] {
-				return Fail(NoMatch{fmt.Sprintf("unexpected %q", slice[i])}),
+				return Fail(NoMatch{fmt.Sprintf("%q (unexpected %q)", x, slice[i])}),
 				       Chunk(slice[i:])
 			}
 		}
@@ -78,7 +78,7 @@ func string_(x string) (this Iteratee) {
 func OneOf(set []byte) (this Iteratee) {
 	this = Cont(func(s Stream) (Iteratee, Stream) {
 		if s == End {
-			return Fail(NoMatch{"end of input"}), s
+			return Fail(NoMatch{"unexpected end of input"}), s
 		}
 		if s == Empty {
 			return this, s
@@ -122,7 +122,7 @@ func ui(byteorder Endianness, n uint,
 	iter = func(res uint64, pos uint) (this Iteratee) {
 		return Cont(func(s Stream) (Iteratee, Stream) {
 			if s == End {
-				return Fail(NoMatch{"end of input"}), s
+				return Fail(NoMatch{fmt.Sprintf("Uint(%d): unexpected end of input", n)}), s
 			}
 			if s == Empty {
 				return this, s
@@ -220,7 +220,7 @@ func Bits(bitorder Endianness, n uint8) Iteratee {
 	iter = func(res uint64, pos uint8, n uint8) (this Iteratee) {
 		this = Cont(func(s Stream) (Iteratee, Stream) {
 			if s == End {
-				return Fail(NoMatch{"end of input"}), s
+				return Fail(NoMatch{fmt.Sprintf("Bits(%d): unexpected end of input", n)}), s
 			}
 			if s == Empty {
 				return this, s
@@ -370,7 +370,7 @@ func StructSize(T reflect.Type) int {
 // combinators...
 
 // returns results as a []interface{}
-func Seq(its ...Iteratee) (this Iteratee) {
+func Seq(its ...Iteratee) Iteratee {
 	if len(its) == 0 {
 		return Done([]interface{}(nil))
 	}
@@ -393,7 +393,7 @@ func seq1(i int, its []Iteratee) Iteratee {
 }
 
 // discards results
-func Seq_(its ...Iteratee) (this Iteratee) {
+func Seq_(its ...Iteratee) Iteratee {
 	if len(its) == 0 {
 		return Done(nil)
 	}
@@ -412,9 +412,9 @@ func Choice(its ...Iteratee) Iteratee {
 	return Cont(func(s Stream) (Iteratee, Stream) {
 		rest := []Iteratee(nil)
 		for _, it := range its {
-			it, s := it.Feed(s)
+			it, t := it.Feed(s)
 			if it.k == nil {
-				return Done(it.result), s
+				return Done(it.result), t
 			}
 			if it.err == nil {
 				rest = append(rest, it)
