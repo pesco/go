@@ -4,6 +4,7 @@ import (
 	"testing"
 	"os"
 	"fmt"
+	"strings"
 )
 
 
@@ -491,6 +492,7 @@ func TestOptional(t *testing.T) {
 		}
 	}
 
+	// must send this iteratee enough input to decide (no rewind)
 	i, s = it.Feed(Chunk([]byte("XY")))
 	if !i.IsCont() {
 		t.Error("should have suspended")
@@ -498,17 +500,18 @@ func TestOptional(t *testing.T) {
 	if s != Empty {
 		t.Error("consumed wrong; left:", s)
 	}
-	i, s = i.Feed(End)
-	if !i.IsDone() {
-		t.Error("should have succeeded")
-	} else {
-		if s != End {
-			t.Error("consumed wrong; left:", s)
-		}
-		if i.Result() != nil {
-			t.Error("should have returned nil; got:", i.Result())
-		}
-	}
+	func() {
+		defer func() {
+			if msg := recover(); msg != nil {
+				if !strings.Contains(msg.(string), "lookahead") {
+					t.Error("expected lookahead error; got:", msg)
+				}
+			} else {
+				t.Error("should have panicked")
+			}
+		}()
+		i, s = i.Feed(End)
+	}()
 
 	i, s = it.Feed(Chunk([]byte("XYZabc")))
 	if !i.IsDone() {

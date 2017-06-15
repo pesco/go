@@ -433,25 +433,52 @@ func Choice(its ...Iteratee) Iteratee {
 	})
 }
 
-// run all arguments in parallel, return the *leftmost* result
+// run all arguments in parallel, return the *leftmost* match
 func OChoice(its ...Iteratee) Iteratee {
+	return ochoice(its, false)
+}
+func ochoice(its []Iteratee, commit bool) Iteratee {
 	if len(its) == 0 {
+		if commit {
+			// we had a success earlier (that we cannot go back to now) but
+			// couldn't tell at the time that all other choices would fail.
+			// (cf. comment below)
+			// NB: this case is a panic because whether it is triggered depends
+			// on the placement of chunk boundaries. therefore, unless the
+			// programmer ensures that an OChoice always has enough lookahead,
+			// the language accepted by the iteratee is not well-defined.
+			panic("OChoice: lookahead needed")
+		}
 		return Fail(NoMatch{"OChoice"})
 	}
 
 	return Cont(func(s Stream) (Iteratee, Stream) {
 		rest := []Iteratee(nil)
 		for _, it := range its {
-			it, s := it.Feed(s)
-			if it.k == nil && rest == nil {
-				// only match if all previous iteratees failed
-				return Done(it.result), s
+			it, t := it.Feed(s)
+			if it.k == nil {	// is done
+				if rest == nil {
+					// all previous iteratees failed -> match
+					return Done(it.result), t
+				} else if (t != Empty && t != End) {
+					// this iteratee succeeded and left some input, but others
+					// before it are suspended waiting for another chunk.
+					// since we don't support rewinding the input stream, we
+					// must at this point commit to match one of the suspended
+					// iteratees.
+					// so we break out of the loop here and signal this condition
+					// to our future self (see error case above).
+					return ochoice(rest, true), Empty
+				}
 			}
 			if it.err == nil {
 				rest = append(rest, it)
 			}
 		}
-		return OChoice(rest...), Empty
+		if s != End {
+			s = Empty
+		}
+		return ochoice(rest, commit), s
 	})
 }
 
