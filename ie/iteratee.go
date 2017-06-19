@@ -133,6 +133,11 @@ func (a Iteratee) ThenIgnore(b Iteratee) Iteratee {
 	})
 }
 
+// run an iteratee bracketed by 'before' and 'after' whose results are ignored
+func Bracket(before, it, after Iteratee) Iteratee {
+	return before.Then(it).ThenIgnore(after)
+}
+
 
 // primitive iteratees...
 
