@@ -75,7 +75,7 @@ func string_(x string) (this Iteratee) {
 	return
 }
 
-func OneOf(set []byte) (this Iteratee) {
+func oneof(bitset [4]uint64) (this Iteratee) {
 	this = Cont(func(s Stream) (Iteratee, Stream) {
 		if s == End {
 			return Fail(NoMatch{"unexpected end of input"}), s
@@ -84,15 +84,35 @@ func OneOf(set []byte) (this Iteratee) {
 			return this, s
 		}
 		bs := s.Slice().([]byte)
-		if bytes.IndexByte(set, bs[0]) == -1 {
-			return Fail(NoMatch{fmt.Sprintf("unexpected %q", bs[0])}), s
+		x  := bs[0]
+		if bitset[x/64] & (1 << (x%64)) != 0 {
+			return Done(x), Chunk(bs[1:])
+		} else {
+			return Fail(NoMatch{fmt.Sprintf("unexpected %q", x)}), s
 		}
-		return Done(bs[0]), Chunk(bs[1:])
 	})
 	return
 }
 
-// XXX todo NoneOf
+func make_bitset(set []byte) (bitset [4]uint64) {
+	for i := 0; i < len(set); i++ {
+		x := set[i]
+		bitset[x/64] |= 1 << (x%64)
+	}
+	return
+}
+
+func OneOf(set []byte) Iteratee {
+	return oneof(make_bitset(set))
+}
+
+func NoneOf(set []byte) Iteratee {
+	bitset := make_bitset(set)
+	for i := 0; i < len(bitset); i++ {
+		bitset[i] = ^bitset[i]
+	}
+	return oneof(bitset)
+}
 
 func Range(it Iteratee, min,max uint64) Iteratee {
 	return Validate(it, func(x_ interface{}) bool {
