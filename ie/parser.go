@@ -2,7 +2,6 @@ package ie
 
 import (
 	"fmt"
-	"bytes"
 	"reflect"
 )
 
