@@ -1,12 +1,11 @@
 package ie
 
 import (
-	"testing"
-	"os"
 	"fmt"
+	"os"
 	"strings"
+	"testing"
 )
-
 
 func eq(s Stream, t string) bool {
 	if len(t) == 0 {
@@ -14,7 +13,6 @@ func eq(s Stream, t string) bool {
 	}
 	return string(s.Slice().([]byte)) == t
 }
-
 
 func TestBind(t *testing.T) {
 	u8 := Uint(BE, 1)
@@ -45,7 +43,7 @@ func TestThen(t *testing.T) {
 
 	input := "0123456789"
 	it, s := it.Feed(Chunk([]byte(input)))
-	
+
 	if !it.IsDone() {
 		t.Error("should have succeeded")
 		return
@@ -104,21 +102,21 @@ func TestSeqSingle(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hallo world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "allo world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello, world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, ", world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello wald!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "ald!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
@@ -159,21 +157,21 @@ func TestSeqSimple(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hallo world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "allo world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello, world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, ", world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello wald!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "ald!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
@@ -215,21 +213,21 @@ func TestSeq(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hallo world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "allo world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello, world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, ", world!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello wald!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "ald!") {
 		t.Error("failing Seq() consumed wrong; left:", s)
@@ -271,21 +269,21 @@ func TestSeq_(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hallo world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "allo world!") {
 		t.Error("failing Seq_() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello, world!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, ", world!") {
 		t.Error("failing Seq_() consumed wrong; left:", s)
 	}
 
 	i, s = it.Feed(Chunk([]byte("hello wald!")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	} else if !eq(s, "ald!") {
 		t.Error("failing Seq_() consumed wrong; left:", s)
@@ -541,7 +539,7 @@ func TestSkip(t *testing.T) {
 		}
 	}
 
-	testcase_multi := func(it Iteratee, in1,in2 string, rest string) {
+	testcase_multi := func(it Iteratee, in1, in2 string, rest string) {
 		it, s := it.Feed(Chunk(in1))
 		if !it.IsCont() {
 			t.Error("should have suspended")
