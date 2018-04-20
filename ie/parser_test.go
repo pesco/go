@@ -1,12 +1,11 @@
 package ie
 
 import (
-	"testing"
 	"reflect"
+	"testing"
 
 	"github.com/pesco/go/monad"
 )
-
 
 func parse(it Iteratee, s string) interface{} {
 	return EnumString(s)(it).(monad.IO)().(Iteratee).Run()
@@ -14,10 +13,9 @@ func parse(it Iteratee, s string) interface{} {
 
 func biteq(s Stream, bs []byte, bitorder Endianness, offs uint8) bool {
 	return string(s.Bytes()) == string(bs) &&
-	       s.Endian() == bitorder &&
-	       s.Offset() == offs
+		s.Endian() == bitorder &&
+		s.Offset() == offs
 }
-
 
 func TestByte(t *testing.T) {
 	it := Byte('x')
@@ -26,7 +24,7 @@ func TestByte(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hello")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	}
 	if !eq(s, "hello") {
@@ -64,7 +62,7 @@ func TestString(t *testing.T) {
 	var s Stream
 
 	i, s = it.Feed(Chunk([]byte("hallo")))
-	if i.Err == nil {
+	if i.Err() == nil {
 		t.Error("should have failed")
 	}
 	if !eq(s, "allo") {
@@ -102,7 +100,6 @@ func TestString(t *testing.T) {
 	}
 }
 
-
 func TestOneOf(t *testing.T) {
 	it := Many([]byte(nil), OneOf([]byte("abc")))
 
@@ -128,9 +125,9 @@ func testBits(bitorder Endianness, t *testing.T) {
 	var result uint64
 
 	testcase := func(bitorder Endianness, n uint8,
-					 input string, offs uint8,
-					 expect uint64,
-					 rest string, roffs uint8) {
+		input string, offs uint8,
+		expect uint64,
+		rest string, roffs uint8) {
 		it = Bits(bitorder, n)
 		i, s = it.Feed(BitChunk([]byte(input), bitorder, offs))
 		if !i.IsDone() {
@@ -148,9 +145,9 @@ func testBits(bitorder Endianness, t *testing.T) {
 
 	// multi-chunk input
 	testcase_multi := func(bitorder Endianness, n uint8,
-	                       input1 string, offs uint8, input2 string,
-						   expect uint64,
-						   rest string, roffs uint8) {
+		input1 string, offs uint8, input2 string,
+		expect uint64,
+		rest string, roffs uint8) {
 		it = Bits(bitorder, n)
 		i, s = it.Feed(BitChunk([]byte(input1), bitorder, offs))
 		if !i.IsCont() {
@@ -188,17 +185,17 @@ func testBits(bitorder Endianness, t *testing.T) {
 		}
 	}
 
-	testcase(BE, 4,  "\x12\x34\x56\x78\x9a",3, 0x9, "\x12\x34\x56\x78\x9a",7)
-	testcase(BE, 12, "\x12\x34\x56\x78\x9a",0, 0x123, "\x34\x56\x78\x9a",4)
-	testcase(BE, 23, "\x12\x34\x56\x78\x9a",4, 0x11a2b3, "\x78\x9a",3)
-	testcase_multi(BE, 23, "\x12\x34",4, "\x56\x78\x9a", 0x11a2b3, "\x78\x9a",3)
-	testcase_end(BE, 23, "\x12\x34",4)
+	testcase(BE, 4, "\x12\x34\x56\x78\x9a", 3, 0x9, "\x12\x34\x56\x78\x9a", 7)
+	testcase(BE, 12, "\x12\x34\x56\x78\x9a", 0, 0x123, "\x34\x56\x78\x9a", 4)
+	testcase(BE, 23, "\x12\x34\x56\x78\x9a", 4, 0x11a2b3, "\x78\x9a", 3)
+	testcase_multi(BE, 23, "\x12\x34", 4, "\x56\x78\x9a", 0x11a2b3, "\x78\x9a", 3)
+	testcase_end(BE, 23, "\x12\x34", 4)
 
-	testcase(LE, 4,  "\x12\x34\x56\x78\x9a",3, 0x2, "\x12\x34\x56\x78\x9a",7)
-	testcase(LE, 12, "\x12\x34\x56\x78\x9a",0, 0x412, "\x34\x56\x78\x9a",4)
-	testcase(LE, 23, "\x12\x34\x56\x78\x9a",4, 0x056341, "\x78\x9a",3)
-	testcase_multi(LE, 23, "\x12\x34",4, "\x56\x78\x9a", 0x056341, "\x78\x9a",3)
-	testcase_end(LE, 23, "\x12\x34",4)
+	testcase(LE, 4, "\x12\x34\x56\x78\x9a", 3, 0x2, "\x12\x34\x56\x78\x9a", 7)
+	testcase(LE, 12, "\x12\x34\x56\x78\x9a", 0, 0x412, "\x34\x56\x78\x9a", 4)
+	testcase(LE, 23, "\x12\x34\x56\x78\x9a", 4, 0x056341, "\x78\x9a", 3)
+	testcase_multi(LE, 23, "\x12\x34", 4, "\x56\x78\x9a", 0x056341, "\x78\x9a", 3)
+	testcase_end(LE, 23, "\x12\x34", 4)
 }
 
 func TestUint(t *testing.T) {
@@ -207,7 +204,7 @@ func TestUint(t *testing.T) {
 	var result uint64
 
 	testcase := func(byteorder Endianness, n uint,
-	                 input string, expect uint64, rest string) {
+		input string, expect uint64, rest string) {
 		it = Uint(byteorder, n)
 		i, s = it.Feed(Chunk(input))
 		if !i.IsDone() {
@@ -224,7 +221,7 @@ func TestUint(t *testing.T) {
 	}
 
 	testcase_multi := func(byteorder Endianness, n uint,
-	                       in1,in2 string, expect uint64, rest string) {
+		in1, in2 string, expect uint64, rest string) {
 		it = Uint(byteorder, n)
 		i, s = it.Feed(Chunk(in1))
 		if !i.IsCont() {
@@ -287,6 +284,7 @@ type TS2 struct {
 	_ [3]uint8
 	C uint32
 }
+
 func TestStruct(t *testing.T) {
 	testcase := func(ptr interface{}, input string, result interface{}, rest string) {
 		it := Struct(LE, ptr)
@@ -313,7 +311,7 @@ func TestStruct(t *testing.T) {
 	testcase((*uint16)(nil), "01234", uint16(0x3130), "234")
 	testcase((*uint32)(nil), "01234", uint32(0x33323130), "4")
 	testcase((*uint64)(nil), "0123456789", uint64(0x3736353433323130), "89")
-	testcase((*[3]uint16)(nil), "0123456789", [3]uint16{0x3130,0x3332,0x3534}, "6789")
-	testcase((*TS1)(nil), "0123456789", TS1{0x3130,[3]uint8{0x32,0x33,0x34},0x38373635}, "9")
-	testcase((*TS2)(nil), "0123456789", TS2{0x3130,[3]uint8{},0x38373635}, "9")
+	testcase((*[3]uint16)(nil), "0123456789", [3]uint16{0x3130, 0x3332, 0x3534}, "6789")
+	testcase((*TS1)(nil), "0123456789", TS1{0x3130, [3]uint8{0x32, 0x33, 0x34}, 0x38373635}, "9")
+	testcase((*TS2)(nil), "0123456789", TS2{0x3130, [3]uint8{}, 0x38373635}, "9")
 }
